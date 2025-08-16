@@ -28,6 +28,6 @@ export const updateTravel = async (id:number, payload: Omit<Travel, "id">) => {
 
 // delete travel by id
 export const deleteTravel = async (id: number) => {
-  const res = await api.delete(`/admin/travels/${id}`);
+  const res = await api.delete(`/admin/travel/${id}`);
   return res.data;
 };
