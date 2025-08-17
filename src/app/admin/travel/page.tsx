@@ -49,7 +49,7 @@ export default function TravelPage() {
       render: (_, row) => (
         <div className="flex gap-2">
           <a
-            href={`/admin/travels/${row.id}`}
+            href={`/admin/travel/form/${row.id}`}
             className="px-4 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-xs"
           >
             Update

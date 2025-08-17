@@ -24,9 +24,11 @@ export const TravelFormSchema = z.object({
   departure_date: z.string().refine(val => /^\d{4}-\d{2}-\d{2}$/.test(val), {
     message: "Format tanggal harus YYYY-MM-DD",
   }),
-  return_date: z.string().refine(val => /^\d{4}-\d{2}-\d{2}$/.test(val), {
-    message: "Format tanggal harus YYYY-MM-DD",
-  }).optional(),
+  return_date: z.string()
+    .optional()
+    .refine(val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+      message: "Format tanggal harus YYYY-MM-DD",
+    }),
   capacity: z.coerce.number().min(1, "Kapasitas minimal 1"),
 });
 
@@ -131,7 +133,9 @@ export default function TravelFormPage() {
                   id="departure_date"
                   placeholder="Departure Date"
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(selectedDates, dateStr) => {
+                    field.onChange(dateStr); // gunakan dateStr yang sudah format Y-m-d
+                  }}
                 />
                 {errors.departure_date && (
                   <p className="text-xs text-error-500">
@@ -153,7 +157,9 @@ export default function TravelFormPage() {
                   id="return_date"
                   placeholder="Return Date"
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(selectedDates, dateStr) => {
+                    field.onChange(dateStr); // gunakan dateStr yang sudah format Y-m-d
+                  }}
                 />
                 {errors.return_date && (
                   <p className="text-xs text-error-500">

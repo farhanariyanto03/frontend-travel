@@ -3,17 +3,16 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
 import Label from './Label';
 import { CalenderIcon } from '../../icons';
-import Hook = flatpickr.Options.Hook;
 import DateOption = flatpickr.Options.DateOption;
 
 type PropsType = {
   id: string;
   mode?: "single" | "multiple" | "range" | "time";
-  onChange?: Hook | Hook[];
+  onChange?: (selectedDates: Date[], dateStr: string, instance: flatpickr.Instance) => void;
   defaultDate?: DateOption;
   label?: string;
   placeholder?: string;
-  value?: DateOption; // tambahin value prop
+  value?: string; // ubah ke string untuk compatibility dengan react-hook-form
 };
 
 export default function DatePicker({
@@ -23,23 +22,34 @@ export default function DatePicker({
   label,
   defaultDate,
   placeholder,
+  value,
 }: PropsType) {
   useEffect(() => {
     const flatPickr = flatpickr(`#${id}`, {
       mode: mode || "single",
       static: true,
       monthSelectorType: "static",
-      dateFormat: "Y-m-d",
-      defaultDate,
-      onChange,
+      dateFormat: "Y-m-d", // pastikan format YYYY-MM-DD
+      defaultDate: value || defaultDate, // gunakan value sebagai prioritas
+      onChange: (selectedDates, dateStr, instance) => {
+        // panggil onChange callback jika ada
+        if (onChange) {
+          onChange(selectedDates, dateStr, instance);
+        }
+      },
     });
+
+    // update value jika prop value berubah
+    if (value && flatPickr && !Array.isArray(flatPickr)) {
+      flatPickr.setDate(value, false); // false = don't trigger onChange
+    }
 
     return () => {
       if (!Array.isArray(flatPickr)) {
         flatPickr.destroy();
       }
     };
-  }, [mode, onChange, id, defaultDate]);
+  }, [mode, onChange, id, defaultDate, value]);
 
   return (
     <div>
