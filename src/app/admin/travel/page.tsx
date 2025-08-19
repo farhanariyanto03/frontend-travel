@@ -1,12 +1,13 @@
 "use client";
 
 import BasicTable, { Column } from "@/components/tables/BasicTableOne";
-import { useQuery } from "@tanstack/react-query";
-import { getTravels } from "@/api/travel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTravels, deleteTravel } from "@/api/travel";
 import { Travel } from "@/api/types/travel";
 import Link from "next/link";
 
 export default function TravelPage() {
+  const queryClient = useQueryClient();
 
   // Ambil data travel dari API pakai React Query
   const { data, isLoading, isError } = useQuery({
@@ -20,6 +21,20 @@ export default function TravelPage() {
       ...t,
       no: i + 1,
     }));
+
+  // Mutation untuk delete
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteTravel(id),
+    onError: (error) => {
+      console.error("Error deleting travel:", error);
+      alert("Failed to delete travel. Please try again.");
+    },
+    onSuccess: () => {
+      // Refetch data setelah delete berhasil
+      queryClient.invalidateQueries({ queryKey: ["travels"] });
+      alert("Travel deleted successfully!");
+    },
+  });
 
   // Definisi kolom tabel
   const columns: Column<Travel & { no: number }>[] = [
@@ -49,27 +64,28 @@ export default function TravelPage() {
       render: (_, row) => (
         <div className="flex gap-2">
           <a
-            href={`/admin/travel/form/${row.id}`}
+            href={`/admin/travel/edit/${row.id}`}
             className="px-4 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-xs"
           >
             Update
           </a>
           <button
             onClick={() => handleDelete(row)}
-            className="px-4 py-3 bg-red-500 text-white rounded-md hover:bg-red-600 text-xs"
+            disabled={deleteMutation.isPending}
+            className="px-4 py-3 bg-red-500 text-white rounded-md hover:bg-red-600 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Delete
+            {deleteMutation.isPending ? "Deleting..." : "Delete"}
           </button>
         </div>
       ),
     },
   ];
 
-  // Hapus data
+  // Hapus data dengan implementasi API call
   const handleDelete = (row: Travel & { no: number }) => {
-    if (confirm(`Hapus travel "${row.title}"?`)) {
+    if (confirm(`Are you sure you want to delete travel "${row.title}"?`)) {
       console.log("Deleting travel:", row);
-      // TODO: Panggil API delete dan refetch data
+      deleteMutation.mutate(row.id);
     }
   };
 
@@ -81,7 +97,7 @@ export default function TravelPage() {
     <>
       <div className="mb-4 flex justify-start">
           <Link
-            href="/admin/travel/form"
+            href="/admin/travel/add"
             className="inline-block px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
           >
             + Create
