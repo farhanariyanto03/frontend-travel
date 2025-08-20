@@ -1,6 +1,11 @@
 @import 'tailwindcss';
+@import "sweetalert2/dist/sweetalert2.min.css";
 
 @custom-variant dark (&:is(.dark *));
+
+.swal2-container {
+  z-index: 9999 !important;
+}
 
 @theme {
   --font-*: initial;

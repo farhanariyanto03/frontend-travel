@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import DatePicker from "@/components/form/date-picker";
 import InputField from "@/components/form/input/InputField";
@@ -18,18 +18,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 // schema dengan zod
 export const TravelFormSchema = z.object({
   type: z.enum(["inter_city", "tourism"]),
-  title: z.string().min(3, "Title minimal 3 karakter"),
-  description: z.string().optional().nullable(),
-  price: z.coerce.number().min(1, "Harga harus lebih dari 0"),
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  price: z.coerce.number().min(1, "Price must be greater than 0"),
   departure_date: z.string().refine(val => /^\d{4}-\d{2}-\d{2}$/.test(val), {
-    message: "Format tanggal harus YYYY-MM-DD",
+    message: "Date format must be YYYY-MM-DD",
   }),
   return_date: z.string()
     .optional()
     .refine(val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
-      message: "Format tanggal harus YYYY-MM-DD",
+      message: "Date format must be YYYY-MM-DD",
     }),
-  capacity: z.coerce.number().min(1, "Kapasitas minimal 1"),
+  capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
 });
 
 export type TravelFormData = z.infer<typeof TravelFormSchema>;
@@ -39,7 +39,7 @@ export default function TravelEditPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
-  const [updateSuccess, setUpdateSuccess] = useState(false);
+  // const [updateSuccess, setUpdateSuccess] = useState(false);
 
   const {
     register,
@@ -89,18 +89,21 @@ export default function TravelEditPage() {
       console.error("Error updating travel:", error);
       alert("Failed to update travel. Please try again.");
     },
-    onSuccess: (data) => {
-      console.log("Travel updated successfully:", data);
-      setUpdateSuccess(true);
+    onSuccess: () => {
+      console.log("Travel updated successfully");
+      // setUpdateSuccess(true);
       
       // Invalidate dan refetch data travel
       queryClient.invalidateQueries({ queryKey: ["travels"] });
       queryClient.invalidateQueries({ queryKey: ["travel", id] });
+
+      // Redirect setelah delay untuk user feedback
+      // setTimeout(() => {
+      //   router.push("/admin/travel");
+      // }, 1500);
       
-      // Redirect setelah delay singkat untuk user feedback
-      setTimeout(() => {
-        router.push("/admin/travel");
-      }, 1500);
+      // Redirect with success parameter like the add page does
+      router.push("/admin/travel?success=updated");
     },
   });
 
@@ -115,12 +118,11 @@ export default function TravelEditPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      {updateSuccess && (
+      {/* {updateSuccess && (
         <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
           Travel updated successfully! Redirecting...
         </div>
-      )}
-      
+      )} */}
       <ComponentCard title="Edit Travel">
         <form className="mt-4 space-y-4" onSubmit={handleSubmit(onSubmit)}>
           {/* Title */}
@@ -249,9 +251,9 @@ export default function TravelEditPage() {
             <button
               className="bg-brand-500 text-white py-3 rounded-xl w-full disabled:opacity-50 disabled:cursor-not-allowed"
               type="submit"
-              disabled={mutation.isPending || isSubmitting || updateSuccess}
+              disabled={mutation.isPending || isSubmitting}
             >
-              {mutation.isPending ? "Updating..." : updateSuccess ? "Updated!" : "Update"}
+              {mutation.isPending ? "Updating..." : "Update"}
             </button>
           </div>
           

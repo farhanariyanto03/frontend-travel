@@ -4,10 +4,39 @@ import BasicTable, { Column } from "@/components/tables/BasicTableOne";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTravels, deleteTravel } from "@/api/travel";
 import { Travel } from "@/api/types/travel";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
+import Swal from "sweetalert2";
 
 export default function TravelPage() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const successParam = searchParams.get("success");
+
+  // Tampilkan toast kalau berhasil create/update
+  useEffect(() => {
+    if (successParam) {
+      Swal.fire({
+        icon: "success",
+        title:
+          successParam === "created"
+            ? "Travel created successfully!"
+            : "Travel updated successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+        toast: true,
+        customClass: {
+          popup: "mt-20", // biar gak ketutupan header
+        },
+        position: "top-end",
+        didClose: () => {
+          router.replace("/admin/travel"); // hapus query param setelah alert hilang
+        },
+      });
+    }
+  }, [successParam, router]);
 
   // Ambil data travel dari API pakai React Query
   const { data, isLoading, isError } = useQuery({
@@ -25,16 +54,48 @@ export default function TravelPage() {
   // Mutation untuk delete
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteTravel(id),
-    onError: (error) => {
-      console.error("Error deleting travel:", error);
-      alert("Failed to delete travel. Please try again.");
-    },
-    onSuccess: () => {
-      // Refetch data setelah delete berhasil
-      queryClient.invalidateQueries({ queryKey: ["travels"] });
-      alert("Travel deleted successfully!");
-    },
   });
+
+  // Hapus data dengan konfirmasi
+  const handleDelete = (row: Travel & { no: number }) => {
+    Swal.fire({
+      title: `Delete travel "${row.title}"?`,
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(row.id, {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["travels"] });
+            Swal.fire({
+              icon: "success",
+              title: "Deleted!",
+              text: "Travel deleted successfully.",
+              timer: 1500,
+              showConfirmButton: false,
+              toast: true,
+              position: "top-end",
+              customClass: {
+                popup: "mt-20",
+              },
+            });
+          },
+          onError: () => {
+            Swal.fire({
+              icon: "error",
+              title: "Failed!",
+              text: "Failed to delete travel. Please try again.",
+            });
+          },
+        });
+      }
+    });
+  };
 
   // Definisi kolom tabel
   const columns: Column<Travel & { no: number }>[] = [
@@ -59,16 +120,15 @@ export default function TravelPage() {
     { label: "Capacity", data: "capacity" },
     {
       label: "Actions",
-      data: "no", // Hanya placeholder supaya type Column<T> tidak error
-      // Render tombol Update & Delete
+      data: "no",
       render: (_, row) => (
         <div className="flex gap-2">
-          <a
+          <Link
             href={`/admin/travel/edit/${row.id}`}
             className="px-4 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-xs"
           >
             Update
-          </a>
+          </Link>
           <button
             onClick={() => handleDelete(row)}
             disabled={deleteMutation.isPending}
@@ -81,14 +141,6 @@ export default function TravelPage() {
     },
   ];
 
-  // Hapus data dengan implementasi API call
-  const handleDelete = (row: Travel & { no: number }) => {
-    if (confirm(`Are you sure you want to delete travel "${row.title}"?`)) {
-      console.log("Deleting travel:", row);
-      deleteMutation.mutate(row.id);
-    }
-  };
-
   // Kondisi loading & error
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error loading data</div>;
@@ -96,15 +148,14 @@ export default function TravelPage() {
   return (
     <>
       <div className="mb-4 flex justify-start">
-          <Link
-            href="/admin/travel/add"
-            className="inline-block px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-          >
-            + Create
-          </Link>
+        <Link
+          href="/admin/travel/add"
+          className="inline-block px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+        >
+          + Create
+        </Link>
       </div>
       <BasicTable columns={columns} data={travels} />
     </>
   );
 }
-

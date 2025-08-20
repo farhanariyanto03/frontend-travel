@@ -18,18 +18,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 // schema dengan zod
 export const TravelFormSchema = z.object({
   type: z.enum(["inter_city", "tourism"]),
-  title: z.string().min(3, "Title minimal 3 karakter"),
-  description: z.string().optional().nullable(),
-  price: z.coerce.number().min(1, "Harga harus lebih dari 0"),
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  price: z.coerce.number().min(1, "Price must be greater than 0"),
   departure_date: z.string().refine(val => /^\d{4}-\d{2}-\d{2}$/.test(val), {
-    message: "Format tanggal harus YYYY-MM-DD",
+    message: "Date format must be YYYY-MM-DD",
   }),
   return_date: z.string()
     .optional()
     .refine(val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
-      message: "Format tanggal harus YYYY-MM-DD",
+      message: "Date format must be YYYY-MM-DD",
     }),
-  capacity: z.coerce.number().min(1, "Kapasitas minimal 1"),
+  capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
 });
 
 export type TravelFormData = z.infer<typeof TravelFormSchema>;
@@ -84,13 +84,19 @@ export default function TravelFormPage() {
   // mutation
   const mutation = useMutation({
     mutationFn: (payload: TravelFormData) =>
-  isUpdate
-    ? updateTravel(Number(id), payload)
-    : createTravel(payload),
+      isUpdate
+        ? updateTravel(Number(id), payload)
+        : createTravel(payload),
     onError: (error) => {
       console.error("Error saving travel:", error);
     },
-    onSuccess: () => router.push("/admin/travel"),
+    onSuccess: () => {
+      router.push(
+        isUpdate 
+          ? "/admin/travel?success=updated" 
+          : "/admin/travel?success=created"
+      );
+    },
   });
 
   const onSubmit = (formData: TravelFormData) => {
