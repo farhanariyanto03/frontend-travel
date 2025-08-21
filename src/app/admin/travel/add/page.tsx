@@ -18,6 +18,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 // schema dengan zod
 export const TravelFormSchema = z.object({
   type: z.enum(["inter_city", "tourism"]),
+  city_to: z.string().optional().nullable(),
+  city_from: z.string().optional().nullable(),
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.coerce.number().min(1, "Price must be greater than 0"),
@@ -41,23 +43,26 @@ export default function TravelFormPage() {
   const isUpdate = Boolean(id);
 
   const {
-  register,
-  control,
-  handleSubmit,
-  reset,
-  formState: { errors, isSubmitting },
-} = useForm({
-  resolver: zodResolver(TravelFormSchema), // 🔥 otomatis infer TravelFormValues
-  defaultValues: {
-    title: "",
-    description: "",
-    departure_date: "",
-    return_date: "",
-    type: "inter_city",
-    price: 0,
-    capacity: 1,
-  },
-});
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(TravelFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      departure_date: "",
+      return_date: "",
+      type: "tourism",
+      city_from: "",
+      city_to: "",
+      price: 0,
+      capacity: 1,
+    },
+  });
 
   // ambil data jika update
   const { data, isLoading } = useQuery({
@@ -75,6 +80,8 @@ export default function TravelFormPage() {
         departure_date: data.data.departure_date ?? "",
         return_date: data.data.return_date ?? "",
         type: data.data.type ?? "inter_city",
+        city_from: data.data.city_from ?? "",
+        city_to: data.data.city_to ?? "",
         price: Number(data.data.price ?? 0),
         capacity: Number(data.data.capacity ?? 1),
       });
@@ -83,17 +90,24 @@ export default function TravelFormPage() {
 
   // mutation
   const mutation = useMutation({
-    mutationFn: (payload: TravelFormData) =>
-      isUpdate
-        ? updateTravel(Number(id), payload)
-        : createTravel(payload),
+    mutationFn: (payload: TravelFormData) => {
+      // Pastikan city_to dan city_from berupa string atau null, tidak pernah undefined
+      const safePayload = {
+        ...payload,
+        city_to: payload.city_to ?? null,
+        city_from: payload.city_from ?? null,
+      };
+      return isUpdate
+        ? updateTravel(Number(id), safePayload)
+        : createTravel(safePayload);
+    },
     onError: (error) => {
       console.error("Error saving travel:", error);
     },
     onSuccess: () => {
       router.push(
-        isUpdate 
-          ? "/admin/travel?success=updated" 
+        isUpdate
+          ? "/admin/travel?success=updated"
           : "/admin/travel?success=created"
       );
     },
@@ -102,6 +116,9 @@ export default function TravelFormPage() {
   const onSubmit = (formData: TravelFormData) => {
     mutation.mutate(formData);
   };
+
+  // pantau value type
+  const selectedType = watch("type");
 
   if (isUpdate && isLoading) return <div>Loading...</div>;
 
@@ -202,6 +219,26 @@ export default function TravelFormPage() {
           />
           {errors.type && (
             <p className="text-xs text-error-500">{errors.type.message}</p>
+          )}
+
+          {selectedType === "inter_city" && (
+            <>
+              <Label>City From</Label>
+              <InputField
+                placeholder="City From"
+                {...register("city_from")}
+                error={!!errors.city_from}
+                hint={errors.city_from?.message}
+              />
+
+              <Label>City To</Label>
+              <InputField
+                placeholder="City To"
+                {...register("city_to")}
+                error={!!errors.city_to}
+                hint={errors.city_to?.message}
+              />
+            </>
           )}
 
           {/* Price */}

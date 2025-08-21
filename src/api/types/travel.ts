@@ -2,6 +2,8 @@
 export interface Travel {
   id: number;
   type: "inter_city" | "tourism";
+  city_to: string | null;
+  city_from: string | null;
   title: string;
   description?: string | null;
   price: number;

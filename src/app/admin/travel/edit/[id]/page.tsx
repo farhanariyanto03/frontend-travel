@@ -15,22 +15,37 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-// schema dengan zod
-export const TravelFormSchema = z.object({
-  type: z.enum(["inter_city", "tourism"]),
-  title: z.string().min(3, "Title must be at least 3 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  price: z.coerce.number().min(1, "Price must be greater than 0"),
-  departure_date: z.string().refine(val => /^\d{4}-\d{2}-\d{2}$/.test(val), {
-    message: "Date format must be YYYY-MM-DD",
-  }),
-  return_date: z.string()
-    .optional()
-    .refine(val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+// schema dengan conditional validation
+export const TravelFormSchema = z
+  .object({
+    type: z.enum(["inter_city", "tourism"]),
+    city_to: z.string().optional().nullable(),
+    city_from: z.string().optional().nullable(),
+    title: z.string().min(3, "Title must be at least 3 characters"),
+    description: z
+      .string()
+      .min(10, "Description must be at least 10 characters"),
+    price: z.coerce.number().min(1, "Price must be greater than 0"),
+    departure_date: z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
       message: "Date format must be YYYY-MM-DD",
     }),
-  capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
-});
+    return_date: z
+      .string()
+      .optional()
+      .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+        message: "Date format must be YYYY-MM-DD",
+      }),
+    capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
+  })
+  .refine(
+    (data) =>
+      data.type !== "inter_city" ||
+      (data.city_from?.trim() && data.city_to?.trim()),
+    {
+      message: "City From and City To are required for inter city travel",
+      path: ["city_from"], // bisa diarahkan ke field city_from
+    }
+  );
 
 export type TravelFormData = z.infer<typeof TravelFormSchema>;
 
@@ -39,13 +54,13 @@ export default function TravelEditPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
-  // const [updateSuccess, setUpdateSuccess] = useState(false);
 
   const {
     register,
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(TravelFormSchema),
@@ -54,11 +69,16 @@ export default function TravelEditPage() {
       description: "",
       departure_date: "",
       return_date: "",
-      type: "inter_city",
+      type: "tourism",
+      city_from: "",
+      city_to: "",
       price: 0,
       capacity: 1,
     },
   });
+
+  // pantau type
+  const selectedType = watch("type");
 
   // ambil data untuk update
   const { data, isLoading, isError } = useQuery({
@@ -76,6 +96,8 @@ export default function TravelEditPage() {
         departure_date: data.data.departure_date ?? "",
         return_date: data.data.return_date ?? "",
         type: data.data.type ?? "inter_city",
+        city_from: data.data.city_from ?? "",
+        city_to: data.data.city_to ?? "",
         price: Number(data.data.price ?? 0),
         capacity: Number(data.data.capacity ?? 1),
       });
@@ -84,7 +106,15 @@ export default function TravelEditPage() {
 
   // mutation untuk update dengan error handling yang lebih baik
   const mutation = useMutation({
-    mutationFn: (payload: TravelFormData) => updateTravel(Number(id), payload),
+    mutationFn: (payload: TravelFormData) => {
+      // Ensure city_to and city_from are string or null, never undefined
+      const safePayload = {
+        ...payload,
+        city_to: payload.city_to ?? null,
+        city_from: payload.city_from ?? null,
+      };
+      return updateTravel(Number(id), safePayload);
+    },
     onError: (error) => {
       console.error("Error updating travel:", error);
       alert("Failed to update travel. Please try again.");
@@ -118,11 +148,6 @@ export default function TravelEditPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      {/* {updateSuccess && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-          Travel updated successfully! Redirecting...
-        </div>
-      )} */}
       <ComponentCard title="Edit Travel">
         <form className="mt-4 space-y-4" onSubmit={handleSubmit(onSubmit)}>
           {/* Title */}
@@ -141,7 +166,9 @@ export default function TravelEditPage() {
             className={errors.description ? "border-error-500" : ""}
           />
           {errors.description && (
-            <p className="text-xs text-error-500">{errors.description.message}</p>
+            <p className="text-xs text-error-500">
+              {errors.description.message}
+            </p>
           )}
 
           {/* Departure Date */}
@@ -220,6 +247,27 @@ export default function TravelEditPage() {
             <p className="text-xs text-error-500">{errors.type.message}</p>
           )}
 
+          {/* City From & City To hanya muncul kalau inter_city */}
+          {selectedType === "inter_city" && (
+            <>
+              <Label>City From</Label>
+              <InputField
+                placeholder="City From"
+                {...register("city_from")}
+                error={!!errors.city_from}
+                hint={errors.city_from?.message}
+              />
+
+              <Label>City To</Label>
+              <InputField
+                placeholder="City To"
+                {...register("city_to")}
+                error={!!errors.city_to}
+                hint={errors.city_to?.message}
+              />
+            </>
+          )}
+
           {/* Price */}
           <Label>Price</Label>
           <InputField
@@ -256,7 +304,7 @@ export default function TravelEditPage() {
               {mutation.isPending ? "Updating..." : "Update"}
             </button>
           </div>
-          
+
           {mutation.isError && (
             <div className="text-center text-red-500 text-sm mt-2">
               Failed to update travel. Please check your connection and try again.

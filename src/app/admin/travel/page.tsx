@@ -155,7 +155,12 @@ export default function TravelPage() {
           + Create
         </Link>
       </div>
-      <BasicTable columns={columns} data={travels} />
+      {travels.length > 0 ? (
+        <BasicTable columns={columns} data={travels} />
+      ) : (
+        <p className="text-center text-gray-500 text-lg py-10">No data available.</p>
+      )}
     </>
   );
 }
+
