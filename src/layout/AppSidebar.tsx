@@ -9,6 +9,7 @@ import {
   GridIcon,
   HorizontaLDots,
   TableIcon,
+  UserIcon,
 } from "../icons/index";
 
 type NavItem = {
@@ -31,6 +32,15 @@ const navItems: NavItem[] = [
     path: "/admin/travel",
     // subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
   },
+  {
+    name: "Users",
+    icon: <UserIcon />,
+    // path: "/admin/users",
+    subItems: [
+      { name: "Driver", path: "/admin/users", pro: false },
+      { name: "Customer", path: "/admin/users", pro: false }
+    ],
+  }
 ];
 
   const othersItems: NavItem[] = [
