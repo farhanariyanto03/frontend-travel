@@ -1,5 +1,4 @@
 import { api } from "./types/axios";
-import { Driver } from "./types/user";
 
 export const getAllDrivers = async () => {
     const response = await api.get("/driver");
@@ -11,12 +10,14 @@ export const getDriverById = async (id: string) => {
     return response.data;
 }
 
-export const createDriver = async (payload: Omit<Driver, "id" | "created_at" | "updated_at">) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const createDriver = async (payload: any) => {
     const response = await api.post("/driver", payload);
     return response.data;
 }
 
-export const updateDriver = async (id: string, payload: Partial<Omit<Driver, "id" | "created_at" | "updated_at">>) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateDriver = async (id: string, payload: any) => {
     const response = await api.put(`/driver/${id}`, payload);
     return response.data;
 }
