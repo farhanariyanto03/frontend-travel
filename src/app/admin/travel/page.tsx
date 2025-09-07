@@ -147,7 +147,7 @@ export default function TravelPage() {
 
   return (
     <>
-      <div className="mb-4 flex justify-start mb-6">
+      <div className="flex justify-start mb-6">
         <Link
           href="/admin/travel/add"
           className="inline-block px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
