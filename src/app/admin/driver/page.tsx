@@ -8,6 +8,7 @@ import BasicTable, { Column } from "../../../components/tables/BasicTableOne";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Swal from "sweetalert2";
+import Loading from "@/components/ui/loading/page";
 
 export default function DriverPage() {
   // Navigation and URL parameter hooks
@@ -158,13 +159,7 @@ export default function DriverPage() {
   ];
 
   // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-lg">Loading drivers...</div>
-      </div>
-    );
-  }
+  if (isLoading) return <Loading />;
 
   // Error state
   if (isError) {

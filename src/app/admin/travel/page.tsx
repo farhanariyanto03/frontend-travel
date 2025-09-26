@@ -8,6 +8,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
+import Loading from "@/components/ui/loading/page";
 
 export default function TravelPage() {
   const queryClient = useQueryClient();
@@ -142,7 +143,7 @@ export default function TravelPage() {
   ];
 
   // Kondisi loading & error
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <Loading />;
   if (isError) return <div>Error loading data</div>;
 
   return (
